@@ -122,7 +122,7 @@ export function validateRpcUrl(url: string): ValidationResult {
 
 /**
  * Sanitizes and validates a custom RPC URL
- * Returns trimmed URL if valid, null otherwise
+ * Returns the trimmed URL if valid, null otherwise
  */
 export function sanitizeRpcUrl(url: string): string | null {
   const result = validateRpcUrl(url)
