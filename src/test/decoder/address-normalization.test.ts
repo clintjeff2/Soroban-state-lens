@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 // @ts-ignore - module is provided by the runtime bundle
 import { Address } from '@stellar/stellar-sdk'
 
-import { normalizeScAddress } from '../../../workers/decoder/normalizeScVal'
+import { normalizeScAddress } from '../../workers/decoder/normalizeScVal'
 
 describe('normalizeScAddress - ScAddress normalization', () => {
   it('converts an account ScAddress to a StrKey string', () => {
