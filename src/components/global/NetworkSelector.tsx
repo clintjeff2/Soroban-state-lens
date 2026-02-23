@@ -1,10 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 
 import { useLensStore } from '../../store/lensStore'
-import {
-  selectNetworkConfig,
-  selectSetNetworkConfig,
-} from '../../store/selectors'
 import { DEFAULT_NETWORKS } from '../../store/types'
 
 import type { NetworkConfig } from '../../store/types'
