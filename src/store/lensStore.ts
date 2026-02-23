@@ -20,6 +20,8 @@ import type {
   NetworkConfigSlice,
 } from './types'
 
+export type { LedgerEntry, LedgerKey } from './types'
+
 // Re-export for backwards compatibility
 export { DEFAULT_NETWORKS }
 
@@ -27,7 +29,7 @@ export { DEFAULT_NETWORKS }
  * Network config slice creator
  */
 const createNetworkConfigSlice = (
-  set: (fn: (state: LensStore) => Partial<LensStore>) => void
+  set: (fn: (state: LensStore) => Partial<LensStore>) => void,
 ): NetworkConfigSlice => ({
   networkConfig: DEFAULT_NETWORK_CONFIG,
 
@@ -46,7 +48,7 @@ const createNetworkConfigSlice = (
  * Ledger data slice creator
  */
 const createLedgerDataSlice = (
-  set: (fn: (state: LensStore) => Partial<LensStore>) => void
+  set: (fn: (state: LensStore) => Partial<LensStore>) => void,
 ): LedgerDataSlice => ({
   ledgerData: {},
 
@@ -78,13 +80,28 @@ const createLedgerDataSlice = (
     set(() => ({
       ledgerData: {},
     })),
+
+  batchLedgerUpdate: (
+    entries: Array<LedgerEntry>,
+    removals: Array<LedgerKey>,
+  ) =>
+    set((state) => {
+      const newData = { ...state.ledgerData }
+      for (const entry of entries) {
+        newData[entry.key] = entry
+      }
+      for (const key of removals) {
+        delete newData[key]
+      }
+      return { ledgerData: newData }
+    }),
 })
 
 /**
  * Expanded nodes slice creator
  */
 const createExpandedNodesSlice = (
-  set: (fn: (state: LensStore) => Partial<LensStore>) => void
+  set: (fn: (state: LensStore) => Partial<LensStore>) => void,
 ): ExpandedNodesSlice => ({
   expandedNodes: [],
 
@@ -96,14 +113,18 @@ const createExpandedNodesSlice = (
         }
         return { expandedNodes: [...state.expandedNodes, nodeId] }
       } else {
-        return { expandedNodes: state.expandedNodes.filter((id) => id !== nodeId) }
+        return {
+          expandedNodes: state.expandedNodes.filter((id) => id !== nodeId),
+        }
       }
     }),
 
   toggleExpanded: (nodeId: string) =>
     set((state) => {
       if (state.expandedNodes.includes(nodeId)) {
-        return { expandedNodes: state.expandedNodes.filter((id) => id !== nodeId) }
+        return {
+          expandedNodes: state.expandedNodes.filter((id) => id !== nodeId),
+        }
       }
       return { expandedNodes: [...state.expandedNodes, nodeId] }
     }),
@@ -140,22 +161,26 @@ export const useLensStore = create<LensStore>()(
       name: NETWORK_CONFIG_STORAGE_KEY,
       storage: createSafeStorage<PersistedState>(),
       // Only persist networkConfig slice
-      partialize: (state): PersistedState => ({ networkConfig: state.networkConfig }),
+      partialize: (state): PersistedState => ({
+        networkConfig: state.networkConfig,
+      }),
       // Validate and merge persisted data safely
       merge: (persistedState, currentState) => ({
         ...currentState,
         ...mergeNetworkConfig(persistedState, currentState),
       }),
-    }
-  )
+    },
+  ),
 )
 
 /**
  * Selector hooks for common use cases
  */
-export const useNetworkConfig = () => useLensStore((state) => state.networkConfig)
+export const useNetworkConfig = () =>
+  useLensStore((state) => state.networkConfig)
 export const useLedgerData = () => useLensStore((state) => state.ledgerData)
-export const useExpandedNodes = () => useLensStore((state) => state.expandedNodes)
+export const useExpandedNodes = () =>
+  useLensStore((state) => state.expandedNodes)
 
 /**
  * Get store state outside of React components (for testing)
@@ -171,4 +196,22 @@ export const resetStore = () => {
     ledgerData: {},
     expandedNodes: [],
   })
+}
+
+/**
+ * Standalone action helpers — callable outside React components
+ */
+export const lensActions = {
+  setNetworkConfig: (config: Partial<NetworkConfig>) =>
+    useLensStore.getState().setNetworkConfig(config),
+  resetNetworkConfig: () => useLensStore.getState().resetNetworkConfig(),
+  toggleExpanded: (nodeId: string) =>
+    useLensStore.getState().toggleExpanded(nodeId),
+  expandAll: (nodeIds: Array<string>) =>
+    useLensStore.getState().expandAll(nodeIds),
+  collapseAll: () => useLensStore.getState().collapseAll(),
+  batchLedgerUpdate: (
+    upserts: Array<LedgerEntry>,
+    removals: Array<LedgerKey>,
+  ) => useLensStore.getState().batchLedgerUpdate(upserts, removals),
 }
